@@ -98,7 +98,18 @@ module Anthropic
         response["usage"].merge!(parsed_data["usage"])
         response.merge!(parsed_data["delta"])
       when "content_block_delta"
-        delta = parsed_data["delta"]["text"]
+        puts ">>>> ANTHROPIC GEM [HTTP]"
+        puts parsed_data.dig("delta")
+        delta_type = parsed_data.dig("delta", "type")
+
+        if delta_type == "text_delta"
+          delta = parsed_data.dig("delta", "text")
+        end
+
+        if delta_type == "input_json_delta"
+          delta = parsed_data.dig("delta", "partial_json")
+        end
+
         response["content"][0]["text"].concat(delta)
         block.yield delta
       end
@@ -153,6 +164,8 @@ module Anthropic
     def handle_faraday_error(chunk, env)
       return unless env&.status != 200
 
+      puts ">>>> HANDLE_ERROR GEM [HTTP]"
+      puts chunk
       raise_error = Faraday::Response::RaiseError.new
       raise_error.on_complete(env.merge(body: try_parse_json(chunk)))
     end
